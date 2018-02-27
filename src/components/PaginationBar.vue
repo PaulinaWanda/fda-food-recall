@@ -31,18 +31,22 @@ export default {
     props: {
         activePage: {
             default: () => {},
+            required: true,
             type: Number
         },
         pagesCount: {
             default: () => {},
+            required: true,
             type: Number
         },
         resultsPerPage: {
             default: () => {},
+            required: true,
             type: Number
         },
         resultsCount: {
             default: () => {},
+            required: true,
             type: Number
         }
     },

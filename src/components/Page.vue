@@ -1,5 +1,13 @@
 <template>
     <div>
+        <transition name="fade">
+            <div
+                v-show="dataIsLoading"
+                class="spinner-container"
+            >
+                <div class="spinner"/>
+            </div>
+        </transition>
         <pagination-bar
             :active-page="activePage"
             :pages-count="pagesCount"
@@ -17,14 +25,7 @@
             </li>
         </ul>
 
-        <ul v-if="errors && errors.length">
-            <li
-                v-for="(error, index) of errors"
-                :key="index"
-            >
-                {{ error.message }}
-            </li>
-        </ul>
+        <p v-if="error">{{ error.message }}</p>
     </div>
 </template>
 
@@ -38,38 +39,45 @@ export default {
     },
     data () {
         return {
-            baseUrl: 'https://api.fda.gov/food/enforcement.json',
             activePage: 1,
-            pagesCount: 1,
-            resultsPerPage: 100,
-            resultsCount: 0,
+            baseUrl: 'https://api.fda.gov/food/enforcement.json',
+            dataIsLoading: true,
+            error: null,
             results: [],
-            errors: []
+            resultsCount: 0,
+            resultsPerPage: 100
         }
     },
-    computed: {},
+    computed: {
+        url () {
+            return `${this.baseUrl}?limit=${this.resultsPerPage}&skip=${(this.activePage - 1) * this.resultsPerPage}`
+        },
+        pagesCount () {
+            return Math.ceil(this.resultsCount / this.resultsPerPage)
+        }
+    },
     watch: {
-        activePage (value) {
-            this.updateFoodRecallData(value)
+        activePage () {
+            this.updateFoodRecallData()
         }
     },
     created () {
-        this.$axios.get(`${this.baseUrl}?limit=${this.resultsPerPage}`)
-            .then(response => {
-                this.setResults(response.data.results)
-                this.setResultsCount(response.data.meta.results.total)
-                this.setPagesCount([this.resultsCount, this.resultsPerPage])
-            })
-            .catch(e => {
-                this.updateErrors(e)
-            })
+        this.getFoodRecallData()
     },
     methods: {
+        getFoodRecallData () {
+            this.$axios.get(this.url)
+                .then(response => {
+                    this.setResults(response.data.results)
+                    this.setResultsCount(response.data.meta.results.total)
+                    this.dataIsLoading = false
+                })
+                .catch(e => {
+                    this.updateError(e)
+                })
+        },
         setActivePage (pageNumber) {
             this.activePage = pageNumber
-        },
-        setPagesCount ([resultsCount, resultsPerPage]) {
-            this.pagesCount = Math.ceil(resultsCount / resultsPerPage)
         },
         setResultsCount (resCount) {
             this.resultsCount = resCount
@@ -77,27 +85,63 @@ export default {
         setResults (res) {
             this.results = res
         },
-        updateErrors (err) {
-            this.errors.push(err)
+        updateError (err) {
+            this.error = err
         },
-        removeErrors () {
-            this.errors = []
+        removeResults () {
+            this.results = []
         },
-        updateFoodRecallData (pageNum) {
-            this.removeErrors()
-            this.$axios.get(`${this.baseUrl}?limit=${this.resultsPerPage}&skip=${(pageNum - 1) * this.resultsPerPage}`)
-                .then(response => {
-                    this.setResults(response.data.results)
-                })
-                .catch(e => {
-                    this.updateErrors(e)
-                })
+        removeError () {
+            this.error = null
+        },
+        updateFoodRecallData () {
+            this.dataIsLoading = true
+            this.removeResults()
+            this.removeError()
+            this.getFoodRecallData()
         }
     }
 }
 </script>
 
 <style scoped>
+    .fade-enter-active, .fade-leave-active {
+        transition: opacity .5s
+    }
+    .fade-enter, .fade-leave-to {
+        opacity: 0
+    }
+    .spinner-container {
+        position: fixed;
+        z-index: 100;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        background-color: rgba(0,0,0,.4);
+    }
+
+    .spinner {
+        width: 20vw;
+        height: 20vw;
+        margin: auto;
+        background-color: #fff;
+        border-radius: 100%;
+        animation: scale-out 1s infinite ease-in-out;
+    }
+
+    @keyframes scale-out {
+        0% {
+            transform: scale(0);
+            opacity: 0.9
+        } 100% {
+              transform: scale(1.0);
+              opacity: 0;
+          }
+    }
+
     ul {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
