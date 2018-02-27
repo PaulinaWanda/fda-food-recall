@@ -17,15 +17,15 @@ module.exports = {
     ],
     // add your custom rules here
     rules: {
-            'arrow-parens': 0,
+        'arrow-parens': 0,
         // allow async-await
         'generator-star-spacing': 'off',
         'indent': [
-                'error',
-                4,
-                {
-                        'SwitchCase': 1
-                }
+            'error',
+            4,
+            {
+                'SwitchCase': 1
+            }
         ],
             // allow debugger during development
             'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
